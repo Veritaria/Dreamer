@@ -4,6 +4,7 @@ Dreamer is a visual Model-Based Reinforcement algorithm, that learns a world mod
 
 This work is my attempt at reproducing Dreamerv1 & v2 papers in pytorch specifically for continuous control tasks in deepmind control suite.
 
+test
 #### Noteworthy differences from original and prior works:
 
  1. This work compares Dreamer and Dreamerv2 agents for continuous control tasks only. Only KL-Balancing is used for dreamerv2 and policy type remains the same as dreamerv1 i.e. Tanh transformed MultivariateNormalDiag distribution.
