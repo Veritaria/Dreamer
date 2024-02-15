@@ -3,60 +3,75 @@ import sys
 import torch
 import numpy as np
 from PIL import Image
+from hanoi_env import * 
 
 
-class DeepMindControl:
+
+
+class BaseEnvWrapper:
 
     def __init__(self, name, seed, size=(64, 64), camera=None):
-
-        domain, task = name.split('-', 1)
-        if domain == 'cup':  # Only domain with multiple words.
-          domain = 'ball_in_cup'
-        if isinstance(domain, str):
-          from dm_control import suite
-          self._env = suite.load(domain, task, task_kwargs={'random':seed})
+        if 'hanoi' in name:
+            self.task=None 
+            self._env=gym.make(name)
+            self._size=(64,64)
+            self.action_space=self._env.action_space 
+            
         else:
-          assert task is None
-          self._env = domain()
-        self._size = size
-        if camera is None:
-          camera = dict(quadruped=2).get(domain, 0)
-        self._camera = camera
+            domain, task = name.split('-', 1)
+            if domain == 'cup':  # Only domain with multiple words.
+                domain = 'ball_in_cup'
+            
+            if isinstance(domain, str):
+                from dm_control import suite
+                self._env = suite.load(domain, task, task_kwargs={'random':seed})
+            else:
+                assert task is None
+                self._env = domain()
+                self._size = size
+        
+            if camera is None:
+                camera = dict(quadruped=2).get(domain, 0)
+            self._camera = camera
 
     @property
     def observation_space(self):
         spaces = {}
-        for key, value in self._env.observation_spec().items():
-          spaces[key] = gym.spaces.Box(
-              -np.inf, np.inf, value.shape, dtype=np.float32)
+        #for key, value in self._env.observation_spec().items():
+        #  spaces[key] = gym.spaces.Box(
+        #      -np.inf, np.inf, value.shape, dtype=np.float32)
         spaces['image'] = gym.spaces.Box(
-            0, 255, (3,) + self._size , dtype=np.uint8)
+            0, 255, (4,) + self._size , dtype=np.uint8)
         return gym.spaces.Dict(spaces)
 
-    @property
-    def action_space(self):
-        spec = self._env.action_spec()
-        return gym.spaces.Box(spec.minimum, spec.maximum, dtype=np.float32)
+
 
     def step(self, action):
         time_step = self._env.step(action)
-        obs = dict(time_step.observation)
+        #obs = time_step[0]
+        obs={}
         obs['image'] = self.render().transpose(2, 0, 1).copy()
-        reward = time_step.reward or 0
-        done = time_step.last()
-        info = {'discount': np.array(time_step.discount, np.float32)}
+        reward = time_step[1]
+        done = time_step[2]
+        info = {'discount': np.array(0.99, np.float32)}
         return obs, reward, done, info
 
     def reset(self):
         time_step = self._env.reset()
-        obs = dict(time_step.observation)
+        #obs = time_step[0]
+        obs={}
         obs['image'] = self.render().transpose(2, 0, 1).copy()
         return obs
 
     def render(self, *args, **kwargs):
         if kwargs.get('mode', 'rgb_array') != 'rgb_array':
           raise ValueError("Only render mode 'rgb_array' is supported.")
-        return self._env.physics.render(*self._size, camera_id=self._camera)
+        #return self._env.physics.render(*self._size, camera_id=self._camera)
+        img=self._env.render()
+        #img=np.concatenate([img,img],axis=0)
+        arr=Image.fromarray(img,mode='RGBA')
+        return np.asarray(arr.resize((64,64)))
+    
 
 
 class TimeLimit:
@@ -179,8 +194,8 @@ class OneHotAction:
         index = np.argmax(action).astype(int)
         reference = np.zeros_like(action)
         reference[index] = 1
-        if not np.allclose(reference, action):
-          raise ValueError(f'Invalid one-hot action:\n{action}')
+        #if not np.allclose(reference, action):
+        #  raise ValueError(f'Invalid one-hot action:\n{action}')
         return self._env.step(index)
 
     def reset(self):
@@ -188,7 +203,7 @@ class OneHotAction:
 
     def _sample_action(self):
         actions = self._env.action_space.n
-        index = self._random.randint(0, actions)
+        index = np.random.randint(0, actions)
         reference = np.zeros(actions, dtype=np.float32)
         reference[index] = 1.0
         return reference

@@ -19,13 +19,16 @@ from utils import *
 
 os.environ['MUJOCO_GL'] = 'egl'
 
-def make_env(args):
-
-    env = env_wrapper.DeepMindControl(args.env, args.seed)
-    env = env_wrapper.ActionRepeat(env, args.action_repeat)
-    env = env_wrapper.NormalizeActions(env)
-    env = env_wrapper.TimeLimit(env, args.time_limit / args.action_repeat)
+def make_env(args,test=False):
+    if test:
+        env = env_wrapper.BaseEnvWrapper(args.testenv, args.seed)
+    else:
+        env = env_wrapper.BaseEnvWrapper(args.env, args.seed) 
+    #env = env_wrapper.ActionRepeat(env, args.action_repeat)
+    #env = env_wrapper.NormalizeActions(env)
+    #env = env_wrapper.TimeLimit(env, args.time_limit / args.action_repeat)
     #env = env_wrapper.RewardObs(env)
+    env=env_wrapper.OneHotAction(env)
     return env
 
 def preprocess_obs(obs):
@@ -359,6 +362,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--env', type=str, default='walker_walk', help='Control Suite environment')
+    parser.add_argument('--testenv', type=str, default='walker_walk', help='Control Suite environment')
     parser.add_argument('--algo', type=str, default='Dreamerv1', choices=['Dreamerv1', 'Dreamerv2'], help='choosing algorithm')
     parser.add_argument('--exp-name', type=str, default='lr1e-3', help='name of experiment for logging')
     parser.add_argument('--train', action='store_true', help='trains the model')
@@ -366,8 +370,8 @@ def main():
     parser.add_argument('--seed', type=int, default=1, help='Random seed')
     parser.add_argument('--no-gpu', action='store_true', help="GPUs aren't used if passed true")
     # Data parameters
-    parser.add_argument('--max-episode-length', type=int, default=1000, help='Max episode length')
-    parser.add_argument('--buffer-size', type=int, default=1000000, help='Experience replay size')  # Original implementation has an unlimited buffer size, but 1 million is the max experience collected anyway
+    parser.add_argument('--max-episode-length', type=int, default=50, help='Max episode length')
+    parser.add_argument('--buffer-size', type=int, default=100000, help='Experience replay size')  # Original implementation has an unlimited buffer size, but 1 million is the max experience collected anyway
     parser.add_argument('--time-limit', type=int, default=1000, help='time limit') # Environment TimeLimit
     # Models parameters
     parser.add_argument('--cnn-activation-function', type=str, default='relu', help='Model activation function for a convolution layer')
@@ -377,7 +381,7 @@ def main():
     parser.add_argument('--deter-size', type=int, default=200, help='GRU hidden size and deterministic belief size')
     parser.add_argument('--stoch-size', type=int, default=30, help='Stochastic State/latent size')
     # Actor Exploration Parameters
-    parser.add_argument('--action-repeat', type=int, default=2, help='Action repeat')
+    parser.add_argument('--action-repeat', type=int, default=1, help='Action repeat')
     parser.add_argument('--action-noise', type=float, default=0.3, help='Action noise')
     # Training parameters
     parser.add_argument('--total_steps', type=int, default=5e6, help='total number of training steps')
@@ -419,7 +423,8 @@ def main():
 
     args = parser.parse_args()
 
-    data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data/')
+    #data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data/')
+    data_path='/scratch/gpfs/sreejank/Dreamer_Data/'
 
     if not (os.path.exists(data_path)):
         os.makedirs(data_path)
@@ -439,10 +444,14 @@ def main():
     else:
         device = torch.device('cpu')
 
-    train_env = make_env(args)
-    test_env  = make_env(args)
+    train_env = make_env(args,test=False)
+    test_env  = make_env(args,test=True)
     obs_shape = train_env.observation_space['image'].shape
-    action_size = train_env.action_space.shape[0]
+
+    if 'hanoi' in args.env:
+        action_size=6 
+    else:
+        action_size = train_env.action_space.shape[0]
     dreamer = Dreamer(args, obs_shape, action_size, device, args.restore)
 
     logger = Logger(logdir)
