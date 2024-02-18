@@ -362,7 +362,8 @@ class HanoiEnv(gym.Env):
                     'reward':-0.1,
                     'subgoal':curr_subgoal
                 })
-        return trajectory 
+        return trajectory
+
     def render(self, mode='human', close=False): 
         obs=self.current_state[::-1]
         width, height = 4.2, 1.5
@@ -387,7 +388,11 @@ class HanoiEnv(gym.Env):
         draw_pegs(ax, peg_width, peg_height, peg_to_hor_midpoints, height)
         draw_discs(ax, disc_height, disc_midpoints, disc_widths)
 
-        return fig2data(fig)
+        data = fig2data(fig)
+
+        plt.close(fig)
+
+        return data
     
 def register_hanoi_env(env_id="Hanoi-v0", n_disks=3,size=4, env_noise=0, begin_noise=0, max_episode_steps=50,test=False):
     gym.envs.register(id=env_id,entry_point=HanoiEnv, max_episode_steps=max_episode_steps, kwargs={'n_disks':n_disks,'size':size,'env_noise':env_noise, 'begin_noise':begin_noise,'test':test})

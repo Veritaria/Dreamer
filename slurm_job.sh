@@ -2,7 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=23:59:59
-#SBATCH --mem-per-cpu 90G
+#SBATCH --mem-per-cpu 16G
 #SBATCH --gres=gpu:1
 
 #SBATCH --job-name train_dual_model_sync

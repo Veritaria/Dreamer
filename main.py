@@ -12,6 +12,8 @@ from utils import *
 
 from dreamer import Dreamer, make_env
 
+# import tracemalloc
+
 
 def main():
 
@@ -79,6 +81,8 @@ def main():
 
     args = parser.parse_args()
 
+    # tracemalloc.start()
+
     #data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data/')
     data_path='/scratch/ml8736/Dreamer_Data/'
 
@@ -134,6 +138,13 @@ def main():
 
         while global_step <= args.total_steps:
 
+            # snapshot1 = tracemalloc.take_snapshot()
+            # top_stats = snapshot.statistics('lineno')
+
+            # print("[ Top 10 ]")
+            # for stat in top_stats[:10]:
+            #     print(stat)
+
             print("##################################")
             print(f"At global step {global_step}")
 
@@ -177,6 +188,13 @@ def main():
 
             global_step = dreamer.data_buffer.steps * args.action_repeat
             logger.flush()
+
+            # snapshot2 = tracemalloc.take_snapshot()
+            # top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+
+            # print("[ Top 10 ]")
+            # for stat in top_stats[:10]:
+            #     print(stat)
 
     elif args.evaluate:
         logs = OrderedDict()
