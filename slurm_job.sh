@@ -7,5 +7,4 @@
 
 #SBATCH --job-name train_dual_model_sync
 #SBATCH --output slurm/train_bg_pfc_combined.out
-python -u dreamer.py --env 'hanoi-v0' --testenv 'hanoitest-v0' --algo 'Dreamerv2' --exp-name 'default_hp' --train --eval 
- 
+python -u main.py --env 'hanoi-v0' --testenv 'hanoitest-v0' --algo 'Dreamerv2' --exp-name 'default_hp' --train --eval 
